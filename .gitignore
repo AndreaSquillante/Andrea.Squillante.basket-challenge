@@ -1,0 +1,61 @@
+# =============== #
+# Unity.gitignore #
+# =============== #
+
+# Cartelle di sistema
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Mm]emoryCaptures/
+
+# Asset cache di Unity
+AssetBundles/
+Assets/AssetStoreTools*
+
+# File di build di Unity Cloud
+sysinfo.txt
+
+# Collaborate cache
+Collab/
+
+# Cache di Unity e pacchetti
+[Ll]ibrary/
+[Pp]ackages/com.unity.package-manager/
+
+# File generati da Visual Studio/JetBrains Rider
+.vs/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# Log di crash di Unity
+*.stacktrace
+
+# File del sistema operativo
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+[Tt]humbs.db
+
+# Cartelle di build di piattaforme specifiche
+[Bb]uilds/
+[Bb]uild/
+[Bb]in/
+obj/
