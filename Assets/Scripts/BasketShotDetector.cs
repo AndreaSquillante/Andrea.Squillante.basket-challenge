@@ -1,10 +1,11 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public sealed class BasketShotDetector : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private Collider netTrigger; // Trigger in zona rete
-
+    [SerializeField] private ScoreManager scoreManager;
     [Header("Debug")]
     [SerializeField] private bool debugLogs = true;
 
@@ -15,8 +16,6 @@ public sealed class BasketShotDetector : MonoBehaviour
         NonPerfect,
         NoBasket
     }
-
-    public System.Action<ShotResult> OnShotResult;
 
     private void Awake()
     {
@@ -46,8 +45,8 @@ public sealed class BasketShotDetector : MonoBehaviour
 
         if (debugLogs) Debug.Log($"Basket result: {result}");
 
-        OnShotResult?.Invoke(result);
-
+      
+        scoreManager?.RegisterShot(result);
         // Notifica la palla che ha segnato
         if (surface != null)
             surface.NotifyBasketScored();
@@ -59,6 +58,7 @@ public sealed class BasketShotDetector : MonoBehaviour
     public void RegisterMiss()
     {
         if (debugLogs) Debug.Log("Basket result: NoBasket");
-        OnShotResult?.Invoke(ShotResult.NoBasket);
+       
+        scoreManager?.RegisterShot(ShotResult.NoBasket);
     }
 }
