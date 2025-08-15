@@ -37,6 +37,9 @@ public sealed class BallLauncher : MonoBehaviour
     [Range(0f, 1f)] public float sidespinPerImpulse = 0.15f;
     [SerializeField] private float maxAngularVelocity = 50f;
 
+    [Header("Positions")]
+    [SerializeField] private ShootingPositionsManager positionsManager;
+
     [Header("Debug")]
     public bool debugTuning = true;
 
@@ -181,6 +184,8 @@ public sealed class BallLauncher : MonoBehaviour
         _state = LaunchState.Flying;
         OnLaunched?.Invoke();
     }
+    public void SetShotOrigin(Transform newOrigin) { shotOrigin = newOrigin; }
+
 
     public void PrepareNextShot()
     {
@@ -202,7 +207,6 @@ public sealed class BallLauncher : MonoBehaviour
     {
         if (debugTuning)
         {
-            // Aggiorna subito i valori nel Rigidbody durante il Play
             _rb.maxAngularVelocity = maxAngularVelocity;
         }
     }

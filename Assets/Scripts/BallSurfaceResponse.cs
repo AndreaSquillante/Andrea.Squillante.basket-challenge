@@ -14,7 +14,8 @@ public sealed class BallSurfaceResponse : MonoBehaviour
     [SerializeField] private float restTime = 0.7f;
 
     [Header("Refs")]
-    [SerializeField] private BasketShotDetector basketDetector; 
+    [SerializeField] private BasketShotDetector basketDetector;
+    [SerializeField] private ShootingPositionsManager positionsManager;
 
     private Rigidbody _rb;
     private BallLauncher _launcher;
@@ -34,7 +35,7 @@ public sealed class BallSurfaceResponse : MonoBehaviour
 
     public void NotifyBasketScored()
     {
-        _basketScored = true; 
+        _basketScored = true;
     }
 
     private void OnCollisionEnter(Collision c)
@@ -44,7 +45,6 @@ public sealed class BallSurfaceResponse : MonoBehaviour
             _groundContacts++;
             ApplyGroundDrag();
 
-            
             if (!_basketScored && basketDetector != null)
             {
                 basketDetector.RegisterMiss();
@@ -63,30 +63,49 @@ public sealed class BallSurfaceResponse : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (_groundContacts > 0)
+        if (IsBallStoppedOnGround())
         {
-            bool slowLin = _rb.velocity.sqrMagnitude < (restSpeed * restSpeed);
-            bool slowAng = _rb.angularVelocity.sqrMagnitude < (restAngSpeed * restAngSpeed);
-
-            if (slowLin && slowAng)
+            _restTimer += Time.fixedDeltaTime;
+            if (_restTimer >= restTime)
             {
-                _restTimer += Time.fixedDeltaTime;
-                if (_restTimer >= restTime)
-                {
-                    _rb.velocity = Vector3.zero;
-                    _rb.angularVelocity = Vector3.zero;
-                    _rb.Sleep();
-                    _launcher?.PrepareNextShot();
-                    _restTimer = 0f;
-                    _basketScored = false; 
-                }
+                HandleBallRest();
             }
-            else _restTimer = 0f;
         }
         else
         {
             _restTimer = 0f;
         }
+    }
+
+    private bool IsBallStoppedOnGround()
+    {
+        if (_groundContacts == 0) return false;
+
+        bool slowLin = _rb.velocity.sqrMagnitude < (restSpeed * restSpeed);
+        bool slowAng = _rb.angularVelocity.sqrMagnitude < (restAngSpeed * restAngSpeed);
+        return slowLin && slowAng;
+    }
+
+    private void HandleBallRest()
+    {
+        _rb.velocity = Vector3.zero;
+        _rb.angularVelocity = Vector3.zero;
+        _rb.Sleep();
+
+        // --- Cambio posizione di tiro ---
+        if (positionsManager != null && _launcher != null)
+        {
+            Transform nextPos = positionsManager.GetNextPosition();
+            if (nextPos != null)
+            {
+                _launcher.SetShotOrigin(nextPos);
+            }
+        }
+
+        _launcher?.PrepareNextShot();
+
+        _restTimer = 0f;
+        _basketScored = false;
     }
 
     private void ApplyGroundDrag()
