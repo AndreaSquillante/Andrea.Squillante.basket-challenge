@@ -16,28 +16,29 @@ public sealed class BallLauncher : MonoBehaviour
     [SerializeField] private float maxAngleFromUpDeg = 40f;
 
     [Header("Force Mapping")]
-    [SerializeField] private float impulsePerCm = 4.5f;
-    [SerializeField] private float impulsePerCmPerSec = 0.018f;
-    [SerializeField] private float maxImpulse = 32f;
+    [Range(0f, 15f)] public float impulsePerCm = 6.0f;
+    [Range(0f, 0.1f)] public float impulsePerCmPerSec = 0.028f;
+    [Range(0f, 60f)] public float maxImpulse = 38f;
 
     [Header("Direction Weights")]
-    [SerializeField] private float horizontalInfluence = 0.45f;
-    [SerializeField] private float verticalInfluence = 1.2f;
-    [SerializeField] private float forwardBias = 0.60f;
+    [Range(0f, 1f)] public float horizontalInfluence = 0.45f;
+    [Range(0f, 2f)] public float verticalInfluence = 1.2f;
+    [Range(0f, 2f)] public float forwardBias = 0.60f;
 
     [Header("Flight Tuning")]
-    [SerializeField] private float gravityMultiplier = 3f;   
-    [SerializeField] private float airDragWhileFlying = 0.0f;
+    [Range(0f, 5f)] public float gravityMultiplier = 2.0f;
+    [Range(0f, 2f)] public float airDragWhileFlying = 0.3f;
     [SerializeField] private float cooldown = 0.25f;
     [SerializeField] private bool holdAtOriginOnStart = true;
 
     [Header("Spin at launch")]
     [SerializeField] private bool applySpin = true;
-    [SerializeField, Tooltip("Torque impulse per unit of linear impulse for backspin")]
-    private float backspinPerImpulse = 0.28f;
-    [SerializeField, Tooltip("Torque impulse per unit of linear impulse for side spin (from horizontal swipe)")]
-    private float sidespinPerImpulse = 0.15f;
-    [SerializeField] private float maxAngularVelocity = 50f; 
+    [Range(0f, 1f)] public float backspinPerImpulse = 0.28f;
+    [Range(0f, 1f)] public float sidespinPerImpulse = 0.15f;
+    [SerializeField] private float maxAngularVelocity = 50f;
+
+    [Header("Debug")]
+    public bool debugTuning = true;
 
     private Rigidbody _rb;
     private float _dpi;
@@ -53,7 +54,7 @@ public sealed class BallLauncher : MonoBehaviour
         _dpi = Mathf.Clamp(Screen.dpi, 100f, 400f);
         _rb.interpolation = RigidbodyInterpolation.Interpolate;
         _rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-        _rb.maxAngularVelocity = maxAngularVelocity; 
+        _rb.maxAngularVelocity = maxAngularVelocity;
     }
 
     private void Start()
@@ -196,4 +197,13 @@ public sealed class BallLauncher : MonoBehaviour
 
     private void SetTrail(bool on) { if (trail) trail.emitting = on; }
     private void ClearTrail() { if (trail) trail.Clear(); }
+
+    private void Update()
+    {
+        if (debugTuning)
+        {
+            // Aggiorna subito i valori nel Rigidbody durante il Play
+            _rb.maxAngularVelocity = maxAngularVelocity;
+        }
+    }
 }
