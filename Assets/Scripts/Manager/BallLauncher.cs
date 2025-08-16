@@ -26,8 +26,8 @@ public sealed class BallLauncher : MonoBehaviour
     [Range(0f, 2f)] public float forwardBias = 0.60f;
 
     [Header("Flight Tuning")]
-    [Range(0f, 5f)] public float gravityMultiplier = 2.0f;
-    [Range(0f, 2f)] public float airDragWhileFlying = 0.3f;
+    [Range(0f, 3f)] public float gravityMultiplier = 3f;
+    [Range(0f, 20f)] public float airDragWhileFlying = 0.1f;
     [SerializeField] private float cooldown = 0.25f;
     [SerializeField] private bool holdAtOriginOnStart = true;
 
@@ -50,6 +50,8 @@ public sealed class BallLauncher : MonoBehaviour
     private LaunchState _state = LaunchState.Holding;
 
     public System.Action OnLaunched;
+    public event System.Action<Transform> OnShotOriginChanged;
+    public Transform ShotOrigin => shotOrigin;
 
     private void Awake()
     {
@@ -65,6 +67,7 @@ public sealed class BallLauncher : MonoBehaviour
         if (!input) input = FindObjectOfType<UnifiedPointerInput>();
         if (holdAtOriginOnStart) HoldAtOrigin();
         SubscribeInput();
+        OnShotOriginChanged?.Invoke(shotOrigin);
     }
 
     private void OnEnable() => SubscribeInput();
@@ -184,8 +187,12 @@ public sealed class BallLauncher : MonoBehaviour
         _state = LaunchState.Flying;
         OnLaunched?.Invoke();
     }
-    public void SetShotOrigin(Transform newOrigin) { shotOrigin = newOrigin; }
 
+    public void SetShotOrigin(Transform newOrigin)
+    {
+        shotOrigin = newOrigin;
+        OnShotOriginChanged?.Invoke(shotOrigin);
+    }
 
     public void PrepareNextShot()
     {
@@ -205,9 +212,10 @@ public sealed class BallLauncher : MonoBehaviour
 
     private void Update()
     {
-        if (debugTuning)
+        if (debugTuning && _rb != null)
         {
             _rb.maxAngularVelocity = maxAngularVelocity;
+            _rb.drag = airDragWhileFlying;
         }
     }
 }
