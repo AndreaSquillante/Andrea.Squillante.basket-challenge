@@ -8,11 +8,6 @@ public sealed class BallSurfaceResponse : MonoBehaviour
     [SerializeField] private float groundLinearDrag = 0.15f;
     [SerializeField] private float groundAngularDrag = 0.25f;
 
-    [Header("Rest detection")]
-    [SerializeField] private float restSpeed = 0.25f;
-    [SerializeField] private float restAngSpeed = 0.8f;
-    [SerializeField] private float restTime = 0.7f;
-
     [Header("Refs")]
     [SerializeField] private BasketShotDetector basketDetector;
     [SerializeField] private ShootingPositionsManager positionsManager;
@@ -20,7 +15,6 @@ public sealed class BallSurfaceResponse : MonoBehaviour
     private Rigidbody _rb;
     private BallLauncher _launcher;
     private int _groundContacts;
-    private float _restTimer;
     private float _defaultLinearDrag;
     private float _defaultAngularDrag;
     private bool _basketScored;
@@ -49,6 +43,9 @@ public sealed class BallSurfaceResponse : MonoBehaviour
             {
                 basketDetector.RegisterMiss();
             }
+
+            // --- Respawn immediato ---
+            RespawnBall();
         }
     }
 
@@ -61,38 +58,12 @@ public sealed class BallSurfaceResponse : MonoBehaviour
         }
     }
 
-    private void FixedUpdate()
-    {
-        if (IsBallStoppedOnGround())
-        {
-            _restTimer += Time.fixedDeltaTime;
-            if (_restTimer >= restTime)
-            {
-                HandleBallRest();
-            }
-        }
-        else
-        {
-            _restTimer = 0f;
-        }
-    }
-
-    private bool IsBallStoppedOnGround()
-    {
-        if (_groundContacts == 0) return false;
-
-        bool slowLin = _rb.velocity.sqrMagnitude < (restSpeed * restSpeed);
-        bool slowAng = _rb.angularVelocity.sqrMagnitude < (restAngSpeed * restAngSpeed);
-        return slowLin && slowAng;
-    }
-
-    private void HandleBallRest()
+    private void RespawnBall()
     {
         _rb.velocity = Vector3.zero;
         _rb.angularVelocity = Vector3.zero;
         _rb.Sleep();
 
-        // --- Cambio posizione di tiro ---
         if (positionsManager != null && _launcher != null)
         {
             Transform nextPos = positionsManager.GetNextPosition();
@@ -103,8 +74,6 @@ public sealed class BallSurfaceResponse : MonoBehaviour
         }
 
         _launcher?.PrepareNextShot();
-
-        _restTimer = 0f;
         _basketScored = false;
     }
 
