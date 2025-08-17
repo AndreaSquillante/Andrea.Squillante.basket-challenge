@@ -6,6 +6,8 @@ public sealed class BasketShotDetector : MonoBehaviour
     [Header("References")]
     [SerializeField] private Collider netTrigger; // Trigger in zona rete
     [SerializeField] private ScoreManager scoreManager;
+    [SerializeField] private BackboardBonus backboardBonus;
+
     [Header("Debug")]
     [SerializeField] private bool debugLogs = true;
 
@@ -34,7 +36,6 @@ public sealed class BasketShotDetector : MonoBehaviour
         var surface = rb.GetComponent<BallSurfaceResponse>();
         if (surface == null) return;
 
-        // Decide il tipo di canestro
         ShotResult result;
         if (tracker.TouchedBackboard)
             result = ShotResult.BackboardBasket;
@@ -45,15 +46,16 @@ public sealed class BasketShotDetector : MonoBehaviour
 
         if (debugLogs) Debug.Log($"Basket result: {result}");
 
-      
-        scoreManager?.RegisterShot(result);
-        // Notifica la palla che ha segnato
-        if (surface != null)
-            surface.NotifyBasketScored();
+        int bonus = 0;
+        if (result == ShotResult.BackboardBasket && backboardBonus != null)
+            bonus = backboardBonus.ClaimBonus();
 
-        // Reset per prossimo tiro
+        scoreManager?.RegisterShot(result, bonus);
+
+        surface.NotifyBasketScored();
         tracker.ResetShotFlags();
     }
+
 
     public void RegisterMiss()
     {
@@ -61,4 +63,6 @@ public sealed class BasketShotDetector : MonoBehaviour
        
         scoreManager?.RegisterShot(ShotResult.NoBasket);
     }
+
+
 }

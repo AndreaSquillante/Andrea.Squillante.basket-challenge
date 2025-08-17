@@ -965,6 +965,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   netTrigger: {fileID: 642640456}
   scoreManager: {fileID: 1549676402}
+  backboardBonus: {fileID: 6308521380715171526}
   debugLogs: 1
 --- !u!1 &673542812
 GameObject:
@@ -2297,6 +2298,103 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1752326207}
   m_CullTransparentMesh: 1
+--- !u!1 &1779638033
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1779638037}
+  - component: {fileID: 1779638036}
+  - component: {fileID: 1779638035}
+  - component: {fileID: 1779638034}
+  m_Layer: 0
+  m_Name: BonusPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!135 &1779638034
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1779638033}
+  m_Material: {fileID: 0}
+  m_IsTrigger: 0
+  m_Enabled: 1
+  serializedVersion: 2
+  m_Radius: 0.5
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!23 &1779638035
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1779638033}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 69bf3184f2bf47b408554851c1126713, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &1779638036
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1779638033}
+  m_Mesh: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!4 &1779638037
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1779638033}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: -10.9, z: 7.15}
+  m_LocalScale: {x: 5.3699, y: 5.3699, z: 5.3699}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6308521380715171524}
+  m_RootOrder: 0
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1806765619
 GameObject:
   m_ObjectHideFlags: 0
@@ -2681,6 +2779,7 @@ GameObject:
   - component: {fileID: 6308521380715171525}
   - component: {fileID: 686403861747888594}
   - component: {fileID: 1726753009}
+  - component: {fileID: 6308521380715171526}
   m_Layer: 0
   m_Name: Backboard
   m_TagString: Untagged
@@ -3838,7 +3937,8 @@ Transform:
   m_LocalPosition: {x: -0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1779638037}
   m_Father: {fileID: 543450651842745490}
   m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -3854,6 +3954,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7c05d6036da8a5745beb5ac742410d82, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &6308521380715171526
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 285575936200344554}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bea9fd9fbc7494f44b637c42be9963e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  chanceCommon: 0.25
+  chanceRare: 0.1
+  chanceVeryRare: 0.05
+  pointsCommon: 4
+  pointsRare: 6
+  pointsVeryRare: 8
+  markerVisual: {fileID: 1779638033}
+  commonMaterial: {fileID: 2100000, guid: fa6826c5c2682424ebfe4b48436900e0, type: 2}
+  rareMaterial: {fileID: 2100000, guid: ef6968d9a1314bb4883872ab312a29f0, type: 2}
+  veryRareMaterial: {fileID: 2100000, guid: c18b74e91fec44a4ba18b4aa4ecc0d8d, type: 2}
 --- !u!4 &6372512242653865052
 Transform:
   m_ObjectHideFlags: 0

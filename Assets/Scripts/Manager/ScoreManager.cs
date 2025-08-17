@@ -13,7 +13,7 @@ public sealed class ScoreManager : MonoBehaviour
         UpdateUI();
     }
 
-    public void RegisterShot(BasketShotDetector.ShotResult result)
+    public void RegisterShot(BasketShotDetector.ShotResult result, int bonusPoints = 0)
     {
         int points = 0;
 
@@ -32,6 +32,8 @@ public sealed class ScoreManager : MonoBehaviour
                 points = 0;
                 break;
         }
+
+        points += bonusPoints;
 
         _score += points;
         UpdateUI();
