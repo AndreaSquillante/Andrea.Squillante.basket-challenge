@@ -5,6 +5,7 @@ public sealed class ScoreManager : MonoBehaviour
 {
     [Header("UI")]
     [SerializeField] private TMP_Text scoreText;
+    public int CurrentScore => _score;
 
     private int _score;
 
@@ -44,4 +45,11 @@ public sealed class ScoreManager : MonoBehaviour
         if (scoreText != null)
             scoreText.text = _score.ToString();
     }
+
+    public void ResetScore()
+    {
+        _score = 0;
+        UpdateUI();
+    }
+
 }

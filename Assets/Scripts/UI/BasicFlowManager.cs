@@ -1,4 +1,3 @@
-using Unity.VisualScripting;
 using UnityEngine;
 
 public sealed class BasicFlowManager : MonoBehaviour
@@ -9,6 +8,8 @@ public sealed class BasicFlowManager : MonoBehaviour
     public State Current { get; private set; }
 
     [SerializeField] private UIFlow ui;
+    [SerializeField] private GameTimer timer;
+    [SerializeField] private ScoreManager scoreManager;
 
     private void Awake()
     {
@@ -21,9 +22,23 @@ public sealed class BasicFlowManager : MonoBehaviour
         SetState(State.MainMenu);
     }
 
-    public void StartGame() => SetState(State.Gameplay);
-    public void EndGameplayToReward() => SetState(State.Reward);
-    public void PlayAgain() => SetState(State.Gameplay);
+    public void StartGame()
+    {
+        SetState(State.Gameplay);
+        scoreManager?.ResetScore();
+        timer?.StartTimer();
+    }
+
+    public void EndGameplayToReward()
+    {
+        timer?.StopTimer();
+        SetState(State.Reward);
+
+        int finalScore = scoreManager != null ? scoreManager.CurrentScore : 0;
+        ui?.ShowReward(finalScore);
+    }
+
+    public void PlayAgain() => StartGame();
     public void BackToMain() => SetState(State.MainMenu);
 
     private void SetState(State s)

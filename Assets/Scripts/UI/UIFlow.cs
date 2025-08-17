@@ -9,8 +9,8 @@ public sealed class UIFlow : MonoBehaviour
     [SerializeField] private GameObject rewardPanel;
 
     [Header("Labels")]
-    [SerializeField] private TMP_Text titleText;   
-    [SerializeField] private TMP_Text rewardText;  
+    [SerializeField] private TMP_Text titleText;
+    [SerializeField] private TMP_Text rewardText;
 
     public void ShowMainMenu()
     {
@@ -24,11 +24,11 @@ public sealed class UIFlow : MonoBehaviour
         if (titleText) titleText.text = "Gameplay";
     }
 
-    public void ShowReward()
+    public void ShowReward(int finalScore = 0)
     {
         SetActive(rewardPanel);
-        if (titleText) titleText.text = "Reward";
-        if (rewardText) rewardText.text = "Great!";
+        if (titleText) titleText.text = "Match Over!";
+        if (rewardText) rewardText.text = $"Final Score: {finalScore}";
     }
 
     private void SetActive(GameObject active)
@@ -39,7 +39,7 @@ public sealed class UIFlow : MonoBehaviour
         if (active) active.SetActive(true);
     }
 
-    // Usefull Hook
+    // Buttons
     public void OnStartButton() => BasicFlowManager.Instance?.StartGame();
     public void OnFinishButton() => BasicFlowManager.Instance?.EndGameplayToReward();
     public void OnPlayAgainButton() => BasicFlowManager.Instance?.PlayAgain();
