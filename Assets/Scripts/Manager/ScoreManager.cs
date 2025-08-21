@@ -14,31 +14,22 @@ public sealed class ScoreManager : MonoBehaviour
         UpdateUI();
     }
 
-    public void RegisterShot(BasketShotDetector.ShotResult result, int bonusPoints = 0)
+    public int RegisterShot(BasketShotDetector.ShotResult result, int bonusPoints = 0)
     {
         int points = 0;
-
         switch (result)
         {
-            case BasketShotDetector.ShotResult.Perfect:
-                points = 3;
-                break;
-
+            case BasketShotDetector.ShotResult.Perfect: points = 3; break;
             case BasketShotDetector.ShotResult.NonPerfect:
-            case BasketShotDetector.ShotResult.BackboardBasket:
-                points = 2;
-                break;
-
-            case BasketShotDetector.ShotResult.NoBasket:
-                points = 0;
-                break;
+            case BasketShotDetector.ShotResult.BackboardBasket: points = 2; break;
+            case BasketShotDetector.ShotResult.NoBasket: points = 0; break;
         }
-
         points += bonusPoints;
-
         _score += points;
         UpdateUI();
+        return points;
     }
+
 
     private void UpdateUI()
     {
