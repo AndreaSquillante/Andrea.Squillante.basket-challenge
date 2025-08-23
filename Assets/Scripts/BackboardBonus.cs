@@ -29,12 +29,10 @@ public sealed class BackboardBonus : MonoBehaviour
             _markerRenderer = markerVisual.GetComponent<Renderer>();
     }
 
-    private void Start()
-    {
-        TrySpawnBonus();
-    }
-
-    private void TrySpawnBonus()
+    /// <summary>
+    /// Called externally at each new shot (e.g. from BallSurfaceResponse when preparing next shot).
+    /// </summary>
+    public void TrySpawnBonus()
     {
         _activeRarity = RollRarity();
 
@@ -47,6 +45,15 @@ public sealed class BackboardBonus : MonoBehaviour
             if (markerVisual) markerVisual.SetActive(true);
             ApplyVisual(_activeRarity);
         }
+    }
+
+    /// <summary>
+    /// Called when a miss happens to clear the marker.
+    /// </summary>
+    public void ResetBonus()
+    {
+        _activeRarity = BonusRarity.None;
+        if (markerVisual) markerVisual.SetActive(false);
     }
 
     private BonusRarity RollRarity()
@@ -65,15 +72,9 @@ public sealed class BackboardBonus : MonoBehaviour
 
         switch (rarity)
         {
-            case BonusRarity.Common:
-                _markerRenderer.sharedMaterial = commonMaterial;
-                break;
-            case BonusRarity.Rare:
-                _markerRenderer.sharedMaterial = rareMaterial;
-                break;
-            case BonusRarity.VeryRare:
-                _markerRenderer.sharedMaterial = veryRareMaterial;
-                break;
+            case BonusRarity.Common: _markerRenderer.sharedMaterial = commonMaterial; break;
+            case BonusRarity.Rare: _markerRenderer.sharedMaterial = rareMaterial; break;
+            case BonusRarity.VeryRare: _markerRenderer.sharedMaterial = veryRareMaterial; break;
         }
     }
 
@@ -88,9 +89,7 @@ public sealed class BackboardBonus : MonoBehaviour
             case BonusRarity.VeryRare: bonus = pointsVeryRare; break;
         }
 
-        _activeRarity = BonusRarity.None;
-        if (markerVisual) markerVisual.SetActive(false);
-
+        ResetBonus(); // reset always after claim
         return bonus;
     }
 }

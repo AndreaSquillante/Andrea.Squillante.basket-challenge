@@ -10,6 +10,8 @@ public sealed class BallLauncher : MonoBehaviour
     [SerializeField] private Transform shotOrigin;
     [SerializeField] private UnifiedPointerInput input;
     [SerializeField] private TrailRenderer trail;
+    [SerializeField] private PowerBarZonesUI zonesUI;
+    [SerializeField] private BackboardBonus backboardBonus;
 
     [Header("Physics Profile")]
     [SerializeField] private ShotPhysicsProfile physicsProfile;
@@ -179,10 +181,13 @@ public sealed class BallLauncher : MonoBehaviour
     {
         shotOrigin = newOrigin;
         OnShotOriginChanged?.Invoke(shotOrigin);
+        zonesUI?.RefreshZones();
     }
 
     public void PrepareNextShot()
     {
+        backboardBonus.ResetBonus();
+        backboardBonus.TrySpawnBonus();
         HoldAtOrigin();
         _state = LaunchState.Holding;
     }

@@ -6,6 +6,7 @@ public sealed class SwipeFeedbackUI : MonoBehaviour
     [Header("Refs")]
     [SerializeField] private UnifiedPointerInput input;
     [SerializeField] private BallLauncher launcher;
+    [SerializeField] private PowerBarZonesUI zonesUI;
 
     // Container that moves to touch start; put arrow and label inside it
     [SerializeField] private RectTransform container;
@@ -56,12 +57,16 @@ public sealed class SwipeFeedbackUI : MonoBehaviour
     {
         _active = true;
         SetVisible(true);
-
-        // move container to touch start (in canvas space)
-        if (container && _canvasRect)
-            container.anchoredPosition = ScreenToCanvas(start);
-
+        if (container && _canvasRect) container.anchoredPosition = ScreenToCanvas(start);
+        zonesUI?.SetFill01(0f);            // <— reset
         UpdateVisual(start, start, 0f);
+    }
+
+    private void HandleEnd(Vector2 start, Vector2 end, float dur)
+    {
+        _active = false;
+        zonesUI?.SetFill01(0f);            // <— reset
+        SetVisible(false);
     }
 
     private void HandleDrag(Vector2 curr)
@@ -70,12 +75,7 @@ public sealed class SwipeFeedbackUI : MonoBehaviour
         UpdateVisual(input.StartScreenPos, curr, input.DragDuration);
     }
 
-    private void HandleEnd(Vector2 start, Vector2 end, float dur)
-    {
-        _active = false;
-        SetVisible(false);
-    }
-
+    
     private void UpdateVisual(Vector2 start, Vector2 current, float dur)
     {
         if (!launcher || !arrow || !_canvasRect) return;
@@ -98,6 +98,7 @@ public sealed class SwipeFeedbackUI : MonoBehaviour
 
         float pct = Mathf.Clamp01(impulse / profile.maxImpulse);
         float length = pct * maxArrowLength;
+        zonesUI?.SetFill01(pct);
 
         // orient arrow in pure screen space
         float angle = Vector2.SignedAngle(Vector2.up, delta.normalized);
