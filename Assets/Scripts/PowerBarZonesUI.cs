@@ -36,10 +36,32 @@ public sealed class PowerBarZonesUI : MonoBehaviour
 
         advisor.Recompute();
 
-        SetZone(zonePerfect, advisor.PerfectRange);
-        SetZone(zoneMake, advisor.MakeRange);
-        SetZone(zoneBackboard, advisor.BackbdRange);
+        var p = advisor.PerfectRange;
+        var m = advisor.MakeRange;
+        var b = advisor.BackbdRange;
+
+        // UI clipping (non-distruttivo per la logica di gioco)
+        if (p.valid && m.valid) m.min = Mathf.Max(m.min, p.max);
+        if (m.valid && b.valid) b.min = Mathf.Max(b.min, m.max);
+
+        // Invalida bande troppo sottili (evita 1.00-1.00 visive)
+        const float eps = 0.005f;
+        if (p.valid && (p.max - p.min) < eps) p.valid = false;
+        if (m.valid && (m.max - m.min) < eps) m.valid = false;
+        if (b.valid && (b.max - b.min) < eps) b.valid = false;
+
+        SetZone(zonePerfect, p);
+        SetZone(zoneMake, m);
+        SetZone(zoneBackboard, b);
+
+        Debug.Log(
+            $"Ranges (UI-clipped): perfect=({p.valid},{p.min:F2}-{p.max:F2})  " +
+            $"make=({m.valid},{m.min:F2}-{m.max:F2})  " +
+            $"back=({b.valid},{b.min:F2}-{b.max:F2})"
+        );
     }
+
+
 
     private void SetZone(Image img, ShotPowerAdvisor.Range01 r)
     {

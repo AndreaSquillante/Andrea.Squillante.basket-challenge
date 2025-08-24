@@ -23,6 +23,10 @@ public sealed class BackboardBonus : MonoBehaviour
     private BonusRarity _activeRarity = BonusRarity.None;
     private Renderer _markerRenderer;
 
+    private void Start()
+    {
+        TrySpawnBonus();    
+    }
     private void Awake()
     {
         if (markerVisual != null)

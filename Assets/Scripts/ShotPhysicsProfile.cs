@@ -6,7 +6,7 @@ public sealed class ShotPhysicsProfile : ScriptableObject
     [Header("Force Mapping")]
     [Range(0f, 15f)] public float impulsePerCm = 6.5f;         // forza di base per cm
     [Range(0f, 0.1f)] public float impulsePerCmPerSec = 0.03f; // più veloce lo swipe, più spinta
-    [Range(0f, 60f)] public float maxImpulse = 40f;            // limita la forza totale
+    [Range(0f, 100f)] public float maxImpulse = 40f;            // limita la forza totale
 
     [Header("Direction Weights")]
     [Range(0f, 1f)] public float horizontalInfluence = 0.40f;  // non troppo sensibile lateralmente

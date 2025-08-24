@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   impulsePerCm: 6.5
   impulsePerCmPerSec: 0.03
-  maxImpulse: 40
+  maxImpulse: 90
   horizontalInfluence: 0.4
   verticalInfluence: 1.3
   forwardBias: 0.65

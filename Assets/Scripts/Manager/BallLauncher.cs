@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Profiling;
 
 [RequireComponent(typeof(Rigidbody))]
 public sealed class BallLauncher : MonoBehaviour
@@ -12,7 +13,8 @@ public sealed class BallLauncher : MonoBehaviour
     [SerializeField] private TrailRenderer trail;
     [SerializeField] private PowerBarZonesUI zonesUI;
     [SerializeField] private BackboardBonus backboardBonus;
-
+    [SerializeField] private ShotPowerAdvisor powerAdvisor;
+ 
     [Header("Physics Profile")]
     [SerializeField] private ShotPhysicsProfile physicsProfile;
     public ShotPhysicsProfile PhysicsProfile => physicsProfile;
@@ -22,6 +24,8 @@ public sealed class BallLauncher : MonoBehaviour
     [SerializeField] private float maxAngleFromUpDeg = 40f;
     [SerializeField] private float cooldown = 0.25f;
     [SerializeField] private bool holdAtOriginOnStart = true;
+    [SerializeField, Range(0f, 0.05f)] private float perfectSnapPad = 0.02f; // tolerance beyond band
+    [SerializeField, Range(0f, 1f)] private float maxLateralInPerfect = 0.20f; // keep lateral small for swish
 
     private Rigidbody _rb;
     private float _dpi;
@@ -118,6 +122,23 @@ public sealed class BallLauncher : MonoBehaviour
         duration = Mathf.Max(0.02f, duration);
         float speedCmPerSec = cm / duration;
         float impulse = Mathf.Min(physicsProfile.maxImpulse, cm * physicsProfile.impulsePerCm + speedCmPerSec * physicsProfile.impulsePerCmPerSec);
+        float pct = impulse / physicsProfile.maxImpulse;
+
+        if (powerAdvisor != null)
+        {
+            var r = powerAdvisor.PerfectRange;
+            if (r.valid)
+            {
+                float pMin = Mathf.Max(0f, r.min - perfectSnapPad);
+                float pMax = Mathf.Min(1f, r.max + perfectSnapPad);
+                if (pct >= pMin && pct <= pMax)
+                {
+                    float centerPct = 0.5f * (r.min + r.max);
+                    impulse = centerPct * physicsProfile.maxImpulse;
+                    lateral = Mathf.Clamp(lateral, -maxLateralInPerfect, maxLateralInPerfect);
+                }
+            }
+        }
 
         ReleaseAndLaunch(dir, impulse, lateral);
         _nextAllowed = Time.time + cooldown;
