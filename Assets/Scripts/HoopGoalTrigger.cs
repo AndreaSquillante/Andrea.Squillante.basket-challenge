@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.WSA;
 
 [RequireComponent(typeof(Collider))]
 public sealed class HoopGoalTrigger : MonoBehaviour
