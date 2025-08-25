@@ -24,12 +24,19 @@ public sealed class UIFlow : MonoBehaviour
         if (titleText) titleText.text = "Gameplay";
     }
 
-    public void ShowReward(int finalScore = 0)
+    // UIFlow.cs
+    public void ShowReward()
     {
         SetActive(rewardPanel);
-        if (titleText) titleText.text = "Match Over!";
-        if (rewardText) rewardText.text = $"Final Score: {finalScore}";
+        if (titleText) titleText.text = "Reward";
     }
+    public void ShowReward(int playerScore, int aiScore)
+    {
+        SetActive(rewardPanel);
+        if (titleText) titleText.text = "Reward";
+        if (rewardText) rewardText.text = $"You: {playerScore}\nAI: {aiScore}";
+    }
+
 
     private void SetActive(GameObject active)
     {

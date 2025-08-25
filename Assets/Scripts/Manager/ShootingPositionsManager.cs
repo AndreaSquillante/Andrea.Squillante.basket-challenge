@@ -6,11 +6,24 @@ public sealed class ShootingPositionsManager : MonoBehaviour
     [SerializeField] private Transform[] shootingPositions;
     [SerializeField] private bool randomOrder = true;
 
+    [Header("Reset options")]
+    [SerializeField] private bool pickOnReset = true; // pick a starting spot when resetting
+    [SerializeField] private int startIndex = 0;      // used if !randomOrder
+
     private int _currentIndex = -1;
 
-    /// <summary>
-    /// Restituisce la prossima posizione di tiro.
-    /// </summary>
+    public int Count => shootingPositions != null ? shootingPositions.Length : 0;
+    public int CurrentIndex => _currentIndex;
+
+    /// <summary>Returns the current shooting position (or null if none selected yet).</summary>
+    public Transform GetCurrentPosition()
+    {
+        if (shootingPositions == null || shootingPositions.Length == 0) return null;
+        if (_currentIndex < 0 || _currentIndex >= shootingPositions.Length) return null;
+        return shootingPositions[_currentIndex];
+    }
+
+    /// <summary>Advance to next position and return it (random or sequential).</summary>
     public Transform GetNextPosition()
     {
         if (shootingPositions == null || shootingPositions.Length == 0)
@@ -27,21 +40,40 @@ public sealed class ShootingPositionsManager : MonoBehaviour
 
         if (randomOrder)
         {
-            int newIndex;
-            do
-            {
+            // pick a different random index than the current one
+            int newIndex = _currentIndex;
+            // small guard loop to avoid immediate repetition
+            for (int i = 0; i < 8 && newIndex == _currentIndex; i++)
                 newIndex = Random.Range(0, shootingPositions.Length);
-            }
-            while (newIndex == _currentIndex); // Evita ripetizione immediata
-
             _currentIndex = newIndex;
         }
         else
         {
-            _currentIndex = (_currentIndex + 1) % shootingPositions.Length;
+            if (_currentIndex < 0) _currentIndex = Mathf.Clamp(startIndex, 0, shootingPositions.Length - 1);
+            else _currentIndex = (_currentIndex + 1) % shootingPositions.Length;
         }
 
         return shootingPositions[_currentIndex];
+    }
+
+    /// <summary>Reset the cycle. If pickOnReset = true, selects a starting spot immediately.</summary>
+    public void ResetCycle()
+    {
+        _currentIndex = -1;
+
+        if (shootingPositions == null || shootingPositions.Length == 0) return;
+
+        if (pickOnReset)
+        {
+            if (randomOrder)
+            {
+                _currentIndex = Random.Range(0, shootingPositions.Length);
+            }
+            else
+            {
+                _currentIndex = Mathf.Clamp(startIndex, 0, shootingPositions.Length - 1);
+            }
+        }
     }
 
 #if UNITY_EDITOR

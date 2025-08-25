@@ -4,7 +4,7 @@ using TMPro;
 public sealed class GameTimer : MonoBehaviour
 {
     [Header("Settings")]
-    [SerializeField] private float matchDuration = 120f; // 2 min default
+    [SerializeField] private float matchDuration = 120f; // 2 min 
 
     [Header("UI")]
     [SerializeField] private TMP_Text timerText;
@@ -12,15 +12,25 @@ public sealed class GameTimer : MonoBehaviour
     private float _timeRemaining;
     private bool _running;
 
+    public bool IsRunning => _running;
+    public float RemainingSeconds => _timeRemaining;
+
+    public void SetMatchDuration(float seconds)
+    {
+        matchDuration = Mathf.Max(1f, seconds);
+    }
+
     public void StartTimer()
     {
         _timeRemaining = matchDuration;
         _running = true;
+        UpdateUI(); // <--- mostra subito 02:00
     }
 
     public void StopTimer()
     {
         _running = false;
+        _timeRemaining = 0f; UpdateUI();
     }
 
     private void Update()

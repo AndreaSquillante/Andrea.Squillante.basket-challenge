@@ -1,69 +1,106 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
+using System.Reflection;
 
+[RequireComponent(typeof(Collider))]
 public sealed class BasketShotDetector : MonoBehaviour
 {
-    [Header("References")]
-    [SerializeField] private Collider netTrigger; // Trigger in zona rete
-    [SerializeField] private ScoreManager scoreManager;
+    [Header("Score targets")]
+    [SerializeField] private ScoreManager playerScore;
+    [SerializeField] private ScoreManager aiScore;
+
+    [Header("Flyer spawn")]
+    [SerializeField] private ScoreFlyerSpawner playerFlyer;  // world-space spawner for Player
+    [SerializeField] private ScoreFlyerSpawner aiFlyer;      // world-space spawner for AI
+    [SerializeField] private Transform flyerAnchor;          // e.g. rim center; if null, uses transform
+
+    [Header("Optional bonus")]
     [SerializeField] private BackboardBonus backboardBonus;
 
     [Header("Debug")]
     [SerializeField] private bool debugLogs = true;
 
-    // in BasketShotDetector
-    [SerializeField] private ScoreFlyerSpawner flyerSpawner;
-    [SerializeField] private Transform flayerSpawnPos; // optional: for world position
+    public enum ShotResult { Perfect, BackboardBasket, NonPerfect, NoBasket }
 
-    public enum ShotResult
+    private void Reset()
     {
-        Perfect,
-        BackboardBasket,
-        NonPerfect,
-        NoBasket
+        var c = GetComponent<Collider>();
+        if (c) c.isTrigger = true; // this Mono must be on the net trigger
     }
 
-    private void Awake()
-    {
-        if (netTrigger == null)
-            Debug.LogError("[BasketShotDetector] Missing netTrigger reference!");
-    }
-
-    
     private void OnTriggerEnter(Collider other)
     {
-        var rb = other.attachedRigidbody; if (rb == null) return;
-        var tracker = rb.GetComponent<BallShotTracker>(); if (tracker == null) return;
-        var surface = rb.GetComponent<BallSurfaceResponse>(); if (surface == null) return;
+        var rb = other.attachedRigidbody;
+        if (!rb) return;
 
+        var tracker = rb.GetComponent<BallShotTracker>();
+        var surface = rb.GetComponent<BallSurfaceResponse>();
+        var owner = rb.GetComponent<BallOwner>(); // Team Player/AI
+
+        if (!tracker || !surface)
+        {
+            if (debugLogs) Debug.LogWarning("[BasketShotDetector] Missing BallShotTracker or BallSurfaceResponse on ball.");
+            return;
+        }
+        var team = (owner != null) ? owner.TeamId : BallOwner.Team.Player;
+
+        // Classify
         ShotResult result =
             tracker.TouchedBackboard ? ShotResult.BackboardBasket :
-            (tracker.TouchedRim ? ShotResult.NonPerfect : ShotResult.Perfect);
+            tracker.TouchedRim ? ShotResult.NonPerfect :
+                                       ShotResult.Perfect;
 
-        int bonus = 0;
-        if (result == ShotResult.BackboardBasket && backboardBonus != null)
-            bonus = backboardBonus.ClaimBonus();
-
-        int awarded = scoreManager ? scoreManager.RegisterShot(result, bonus) : 0;
-
-        if (awarded != 0 && flyerSpawner != null)
+        // Base points
+        int basePts = result switch
         {
-            Vector3 pos = flayerSpawnPos ? flayerSpawnPos.position : other.transform.position;
-            flyerSpawner.SpawnAtWorld(pos, awarded);
+            ShotResult.Perfect => 3,
+            ShotResult.NonPerfect => 2,
+            ShotResult.BackboardBasket => 2,
+            _ => 0
+        };
+
+        // Route to correct scoreboard
+        var sm = (team == BallOwner.Team.AI) ? aiScore : playerScore;
+        if (sm != null)
+        {
+            sm.RegisterShot(result);
+
+            // Backboard bonus: add directly to scoreboard
+            int bonus = 0;
+            if (result == ShotResult.BackboardBasket && backboardBonus != null)
+            {
+                bonus = backboardBonus.ClaimBonus();
+                if (bonus > 0)
+                    sm.AddBonusPoints(bonus); // <-- direct call
+            }
+
+            // Spawn flyer with total awarded points (base + bonus)
+            int totalAdded = basePts + bonus;
+            if (totalAdded > 0)
+            {
+                var sp = (team == BallOwner.Team.AI) ? aiFlyer : playerFlyer;
+                if (sp != null)
+                {
+                    Vector3 pos = flyerAnchor ? flyerAnchor.position : transform.position;
+                    sp.SpawnAtWorld(pos, totalAdded);
+                }
+            }
         }
+        else if (debugLogs)
+        {
+            Debug.LogWarning("[BasketShotDetector] No ScoreManager assigned for team " + team);
+        }
+
+        if (debugLogs) Debug.Log($"[BasketShotDetector] {team} -> {result} (+{basePts})");
 
         surface.NotifyBasketScored();
         tracker.ResetShotFlags();
     }
 
-
-
-    public void RegisterMiss()
+    // Miss from ground (call from BallSurfaceResponse when first ground touch after a shot)
+    public void RegisterMiss(BallOwner.Team team)
     {
-        if (debugLogs) Debug.Log("Basket result: NoBasket");
-       
-        scoreManager?.RegisterShot(ShotResult.NoBasket);
+        var sm = (team == BallOwner.Team.AI) ? aiScore : playerScore;
+        sm?.RegisterShot(ShotResult.NoBasket);
+        if (debugLogs) Debug.Log($"[BasketShotDetector] Miss for {team}");
     }
-
-
 }

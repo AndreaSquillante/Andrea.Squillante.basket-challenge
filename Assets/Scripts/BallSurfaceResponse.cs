@@ -1,4 +1,5 @@
 using UnityEngine;
+using static UnityEngine.UI.GridLayoutGroup;
 
 [RequireComponent(typeof(Rigidbody))]
 public sealed class BallSurfaceResponse : MonoBehaviour
@@ -11,6 +12,7 @@ public sealed class BallSurfaceResponse : MonoBehaviour
     [Header("Refs")]
     [SerializeField] private BasketShotDetector basketDetector;
     [SerializeField] private ShootingPositionsManager positionsManager;
+    [SerializeField] private BallOwner owner;
 
     private Rigidbody _rb;
     private BallLauncher _launcher;
@@ -41,7 +43,8 @@ public sealed class BallSurfaceResponse : MonoBehaviour
 
             if (!_basketScored && basketDetector != null)
             {
-                basketDetector.RegisterMiss();
+                if (!_basketScored && basketDetector != null && owner != null)
+                    basketDetector.RegisterMiss(owner.TeamId);
             }
 
             // --- Respawn immediato ---
@@ -55,6 +58,19 @@ public sealed class BallSurfaceResponse : MonoBehaviour
         {
             _groundContacts = Mathf.Max(0, _groundContacts - 1);
             if (_groundContacts == 0) RestoreDrag();
+        }
+    }
+    public void HardResetForNewMatch()
+    {
+        _basketScored = false;
+        _groundContacts = 0;
+        RestoreDrag();
+        var rb = GetComponent<Rigidbody>();
+        if (rb)
+        {
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.Sleep();
         }
     }
 

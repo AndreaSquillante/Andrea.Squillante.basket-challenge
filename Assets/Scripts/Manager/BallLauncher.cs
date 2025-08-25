@@ -24,69 +24,100 @@ public sealed class BallLauncher : MonoBehaviour
     [SerializeField] private float maxAngleFromUpDeg = 40f;
     [SerializeField] private float cooldown = 0.25f;
     [SerializeField] private bool holdAtOriginOnStart = true;
-    [SerializeField, Range(0f, 0.05f)] private float perfectSnapPad = 0.02f; // tolerance beyond band
-    [SerializeField, Range(0f, 1f)] private float maxLateralInPerfect = 0.20f; // keep lateral small for swish
 
+    [Header("Arcade Arc")]
+    [SerializeField] private Transform hoopTarget;            // rim center (empty)
+    [SerializeField] private bool useArcadeArc = true;        // fixed arc like Basketball Stars
+    [SerializeField, Range(20f, 70f)] private float targetLaunchAngleDeg = 48f;
+    [SerializeField, Range(0f, 25f)] private float maxYawFromSwipeDeg = 12f;
+
+    [Header("Perfect Snap")]
+    [SerializeField] private bool snapToPerfect = true;
+    [SerializeField, Range(0f, 0.05f)] private float perfectSnapPad = 0.02f; // tolerance beyond band
+    [SerializeField, Range(0f, 1f)] private float maxLateralInPerfect = 0.20f;
+
+    [Header("Debug")]
+    [SerializeField] private bool liveTune = true; // updates rb.maxAngularVelocity at runtime
+
+    [Header("Control")]
+    [SerializeField] private bool listenToPlayerInput = true;  // Player ball: true, AI ball: false
+    [SerializeField] private bool autoFindInput = true;
+    // State
     private Rigidbody _rb;
     private float _dpi;
     private float _nextAllowed;
     private bool _subscribed;
     private LaunchState _state = LaunchState.Holding;
 
+    // Events
     public System.Action OnLaunched;
     public event System.Action<Transform> OnShotOriginChanged;
+
+    // Exposed read-only
     public Transform ShotOrigin => shotOrigin;
-
-    // Expose read-only profile values
-    public float MaxImpulse => physicsProfile.maxImpulse;
-    public float GravityMultiplier => physicsProfile.gravityMultiplier;
-
+    public float MaxImpulse => physicsProfile ? physicsProfile.maxImpulse : 0f;
+    public float GravityMultiplier => physicsProfile ? physicsProfile.gravityMultiplier : 1f;
     public Camera Cam { get => cam; set => cam = value; }
 
     private void Awake()
     {
         _rb = GetComponent<Rigidbody>();
         _dpi = Mathf.Clamp(Screen.dpi, 100f, 400f);
+
         _rb.interpolation = RigidbodyInterpolation.Interpolate;
         _rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-        _rb.maxAngularVelocity = physicsProfile.maxAngularVelocity;
+
+        if (physicsProfile)
+            _rb.maxAngularVelocity = physicsProfile.maxAngularVelocity;
     }
 
     private void Start()
     {
-        if (!input) input = FindObjectOfType<UnifiedPointerInput>();
+        if (listenToPlayerInput)
+        {
+            if (!input && autoFindInput) input = FindObjectOfType<UnifiedPointerInput>();
+            SubscribeInput();
+        }
+        else
+        {
+            UnsubscribeInput(); 
+        }
+
         if (holdAtOriginOnStart) HoldAtOrigin();
-        SubscribeInput();
         OnShotOriginChanged?.Invoke(shotOrigin);
+   
+        zonesUI?.RefreshZones();                    
     }
 
-    private void OnEnable() => SubscribeInput();
-    private void OnDisable() => UnsubscribeInput();
+    private void OnEnable() { if (listenToPlayerInput) SubscribeInput(); }
+    private void OnDisable() { UnsubscribeInput(); }
 
     private void SubscribeInput()
     {
+        if (!listenToPlayerInput) return;
         if (_subscribed || input == null) return;
-
         input.OnDragStart += HandleStart;
         input.OnDragEnd += HandleEnd;
-
         _subscribed = true;
     }
 
     private void UnsubscribeInput()
     {
-        if (!_subscribed || input == null) return;
-
+        if (!_subscribed || input == null) { _subscribed = false; return; }
         input.OnDragStart -= HandleStart;
         input.OnDragEnd -= HandleEnd;
-
         _subscribed = false;
     }
 
+    private void Update()
+    {
+        if (liveTune && physicsProfile)
+            _rb.maxAngularVelocity = physicsProfile.maxAngularVelocity;
+    }
 
     private void FixedUpdate()
     {
-        if (_state == LaunchState.Flying && physicsProfile.gravityMultiplier > 1.001f)
+        if (_state == LaunchState.Flying && physicsProfile && physicsProfile.gravityMultiplier > 1.001f)
             _rb.AddForce(Physics.gravity * (physicsProfile.gravityMultiplier - 1f), ForceMode.Acceleration);
     }
 
@@ -94,6 +125,7 @@ public sealed class BallLauncher : MonoBehaviour
     {
         if (Time.time < _nextAllowed) return;
         if (_state == LaunchState.Cooldown) return;
+
         HoldAtOrigin();
         _state = LaunchState.Aiming;
     }
@@ -102,40 +134,53 @@ public sealed class BallLauncher : MonoBehaviour
     {
         if (Time.time < _nextAllowed) return;
         if (_state != LaunchState.Aiming) return;
+        if (!physicsProfile) { _state = LaunchState.Holding; return; }
 
         Vector2 delta = end - start;
+
         float cm = ScreenPixelsToCm(delta.magnitude);
         if (cm < minSwipeCm) { _state = LaunchState.Holding; return; }
 
         float angle = Vector2.Angle(Vector2.up, delta.normalized);
         if (angle > maxAngleFromUpDeg) { _state = LaunchState.Holding; return; }
 
+        // lateral [-1..1] from swipe X; vertical is ignored in arcade mode
         float lateral = Mathf.Clamp(delta.x / (Screen.width * 0.5f), -1f, 1f);
         float vertical = Mathf.Clamp(delta.y / (Screen.height * 0.5f), -1f, 1f);
 
-        Vector3 dir =
-              Cam.transform.right * (lateral * physicsProfile.horizontalInfluence)
-            + Cam.transform.up * (vertical * physicsProfile.verticalInfluence)
-            + Cam.transform.forward * physicsProfile.forwardBias;
-        dir = dir.normalized;
+        // direction
+        Vector3 dir = useArcadeArc
+            ? BuildArcadeDirection(lateral)
+            : (
+                cam.transform.right * (lateral * physicsProfile.horizontalInfluence) +
+                cam.transform.up * (vertical * physicsProfile.verticalInfluence) +
+                cam.transform.forward * physicsProfile.forwardBias
+              ).normalized;
 
+        // impulse
         duration = Mathf.Max(0.02f, duration);
         float speedCmPerSec = cm / duration;
-        float impulse = Mathf.Min(physicsProfile.maxImpulse, cm * physicsProfile.impulsePerCm + speedCmPerSec * physicsProfile.impulsePerCmPerSec);
-        float pct = impulse / physicsProfile.maxImpulse;
+        float impulse = Mathf.Min(
+            physicsProfile.maxImpulse,
+            cm * physicsProfile.impulsePerCm + speedCmPerSec * physicsProfile.impulsePerCmPerSec
+        );
 
-        if (powerAdvisor != null)
+        // snap-to-perfect (optional)
+        if (snapToPerfect && powerAdvisor != null)
         {
-            var r = powerAdvisor.PerfectRange;
+            var r = powerAdvisor.PerfectRange; // advisor should be recomputed by binders when origin changes
             if (r.valid)
             {
+                float pct = impulse / physicsProfile.maxImpulse;
                 float pMin = Mathf.Max(0f, r.min - perfectSnapPad);
                 float pMax = Mathf.Min(1f, r.max + perfectSnapPad);
+
                 if (pct >= pMin && pct <= pMax)
                 {
                     float centerPct = 0.5f * (r.min + r.max);
-                    impulse = centerPct * physicsProfile.maxImpulse;
+                    impulse = Mathf.Clamp(centerPct * physicsProfile.maxImpulse, 0f, physicsProfile.maxImpulse);
                     lateral = Mathf.Clamp(lateral, -maxLateralInPerfect, maxLateralInPerfect);
+                    if (useArcadeArc) dir = BuildArcadeDirection(lateral); // re-apply yaw clamp
                 }
             }
         }
@@ -183,10 +228,10 @@ public sealed class BallLauncher : MonoBehaviour
 
         if (physicsProfile.applySpin)
         {
-            Vector3 backspinAxis = Cam.transform.right;
-            float backspinImpulse = physicsProfile.backspinPerImpulse * impulse;
+            Vector3 backspinAxis = cam ? cam.transform.right : Vector3.right;
+            Vector3 sidespinAxis = cam ? cam.transform.up : Vector3.up;
 
-            Vector3 sidespinAxis = Cam.transform.up;
+            float backspinImpulse = physicsProfile.backspinPerImpulse * impulse;
             float sidespinImpulse = physicsProfile.sidespinPerImpulse * impulse * lateral01;
 
             _rb.AddTorque(-backspinAxis * backspinImpulse, ForceMode.Impulse);
@@ -207,8 +252,12 @@ public sealed class BallLauncher : MonoBehaviour
 
     public void PrepareNextShot()
     {
-        backboardBonus.ResetBonus();
-        backboardBonus.TrySpawnBonus();
+        if (backboardBonus != null)
+        {
+            // These must exist on your BackboardBonus (public).
+            backboardBonus.ResetBonus();
+            backboardBonus.TrySpawnBonus();
+        }
         HoldAtOrigin();
         _state = LaunchState.Holding;
     }
@@ -222,5 +271,53 @@ public sealed class BallLauncher : MonoBehaviour
 
     private void SetTrail(bool on) { if (trail) trail.emitting = on; }
     private void ClearTrail() { if (trail) trail.Clear(); }
+
+    // Builds a consistent arcade arc that aims toward the hoop with a fixed elevation and limited yaw from swipe.
+    private Vector3 BuildArcadeDirection(float lateral01)
+    {
+        Transform origin = shotOrigin ? shotOrigin : transform;
+        Vector3 p0 = origin.position;
+
+        Vector3 pc = hoopTarget
+            ? hoopTarget.position
+            : (cam ? cam.transform.position + cam.transform.forward * 10f : p0 + Vector3.forward);
+
+        Vector3 toHoopXZ = new Vector3(pc.x, p0.y, pc.z) - p0;
+        Vector3 hDir = toHoopXZ.sqrMagnitude > 1e-6f ? toHoopXZ.normalized : Vector3.forward;
+
+        float ang = Mathf.Clamp(targetLaunchAngleDeg, 20f, 70f) * Mathf.Deg2Rad;
+        Vector3 dir = (hDir * Mathf.Cos(ang) + Vector3.up * Mathf.Sin(ang)).normalized;
+
+        float yaw = Mathf.Clamp(lateral01, -1f, 1f) * maxYawFromSwipeDeg;
+        dir = Quaternion.AngleAxis(yaw, Vector3.up) * dir;
+
+        return dir;
+    }
+    // Public read-only: can AI shoot now?
+    public bool IsReadyForShot => _state == LaunchState.Holding;
+
+    // Public launch for AI (impulsePct in [0..1], lateral01 in [-1..1])
+    public bool LaunchAI(float impulsePct, float lateral01)
+    {
+        if (!_rb || physicsProfile == null) return false;
+        if (Time.time < _nextAllowed) return false;
+        if (_state != LaunchState.Holding) return false;
+
+        // Build direction (use same policy as player)
+        Vector3 dir = useArcadeArc
+            ? BuildArcadeDirection(lateral01)
+            : (
+                cam.transform.right * (lateral01 * physicsProfile.horizontalInfluence) +
+                cam.transform.up * (1f * physicsProfile.verticalInfluence) +
+                cam.transform.forward * physicsProfile.forwardBias
+              ).normalized;
+
+        float impulse = Mathf.Clamp01(impulsePct) * physicsProfile.maxImpulse;
+
+        ReleaseAndLaunch(dir, impulse, lateral01);
+        _nextAllowed = Time.time + cooldown;
+        _state = LaunchState.Cooldown;
+        return true;
+    }
 
 }

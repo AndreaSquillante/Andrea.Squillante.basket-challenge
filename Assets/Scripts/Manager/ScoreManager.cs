@@ -14,22 +14,28 @@ public sealed class ScoreManager : MonoBehaviour
         UpdateUI();
     }
 
-    public int RegisterShot(BasketShotDetector.ShotResult result, int bonusPoints = 0)
+    public void RegisterShot(BasketShotDetector.ShotResult result)
     {
         int points = 0;
         switch (result)
         {
             case BasketShotDetector.ShotResult.Perfect: points = 3; break;
-            case BasketShotDetector.ShotResult.NonPerfect:
+            case BasketShotDetector.ShotResult.NonPerfect: points = 2; break;
             case BasketShotDetector.ShotResult.BackboardBasket: points = 2; break;
             case BasketShotDetector.ShotResult.NoBasket: points = 0; break;
         }
-        points += bonusPoints;
         _score += points;
         UpdateUI();
-        return points;
     }
 
+    // Optional helper to add raw bonus points (for backboard bonus etc.)
+    public System.Action<int> TryAddRaw => AddRaw;
+    private void AddRaw(int pts)
+    {
+        _score += Mathf.Max(0, pts);
+        UpdateUI();
+    }
+    public void AddBonusPoints(int pts) { _score += Mathf.Max(0, pts); UpdateUI(); }
 
     private void UpdateUI()
     {
