@@ -16,6 +16,10 @@ public sealed class BasketShotDetector : MonoBehaviour
     [Header("Optional bonus")]
     [SerializeField] private BackboardBonus backboardBonus;
 
+    [Header("Fireball (per team)")]
+    [SerializeField] private FireballController playerFireball;
+    [SerializeField] private FireballController aiFireball;
+
     [Header("Debug")]
     [SerializeField] private bool debugLogs = true;
 
@@ -58,23 +62,25 @@ public sealed class BasketShotDetector : MonoBehaviour
             _ => 0
         };
 
-        // Route to correct scoreboard
         var sm = (team == BallOwner.Team.AI) ? aiScore : playerScore;
+        var fb = (team == BallOwner.Team.AI) ? aiFireball : playerFireball;
+        int mult = (fb != null && fb.IsActive) ? 2 : 1;
+
         if (sm != null)
         {
-            sm.RegisterShot(result);
+            // add base with multiplier
+            sm.RegisterShot(result, mult);
 
-            // Backboard bonus: add directly to scoreboard
+            // optional backboard bonus (also multiplied)
             int bonus = 0;
             if (result == ShotResult.BackboardBasket && backboardBonus != null)
             {
                 bonus = backboardBonus.ClaimBonus();
-                if (bonus > 0)
-                    sm.AddBonusPoints(bonus); // <-- direct call
+                if (bonus > 0) sm.AddBonusPoints(bonus, mult);
             }
 
-            // Spawn flyer with total awarded points (base + bonus)
-            int totalAdded = basePts + bonus;
+            // flyer shows total awarded this event
+            int totalAdded = basePts * mult + bonus * mult;
             if (totalAdded > 0)
             {
                 var sp = (team == BallOwner.Team.AI) ? aiFlyer : playerFlyer;
@@ -85,22 +91,25 @@ public sealed class BasketShotDetector : MonoBehaviour
                 }
             }
         }
-        else if (debugLogs)
-        {
-            Debug.LogWarning("[BasketShotDetector] No ScoreManager assigned for team " + team);
-        }
 
-        if (debugLogs) Debug.Log($"[BasketShotDetector] {team} -> {result} (+{basePts})");
+        // fireball: increase streak / possibly activate
+        fb?.NotifyMake();
+
+        if (debugLogs) Debug.Log($"[BasketShotDetector] {team} -> {result} (x{mult})");
 
         surface.NotifyBasketScored();
         tracker.ResetShotFlags();
     }
 
-    // Miss from ground (call from BallSurfaceResponse when first ground touch after a shot)
+    // called from BallSurfaceResponse on first ground touch after a miss
     public void RegisterMiss(BallOwner.Team team)
     {
         var sm = (team == BallOwner.Team.AI) ? aiScore : playerScore;
-        sm?.RegisterShot(ShotResult.NoBasket);
-        if (debugLogs) Debug.Log($"[BasketShotDetector] Miss for {team}");
+        sm?.RegisterShot(ShotResult.NoBasket); // adds 0 but keeps UI consistent
+
+        var fb = (team == BallOwner.Team.AI) ? aiFireball : playerFireball;
+        fb?.NotifyMiss();
+
+        if (debugLogs) Debug.Log($"[BasketShotDetector] Miss for {team} (fireball reset)");
     }
 }

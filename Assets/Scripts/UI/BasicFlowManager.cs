@@ -21,6 +21,8 @@ public sealed class BasicFlowManager : MonoBehaviour
     [SerializeField] private BackboardBonus backboardBonus;
     [SerializeField] private ShootingPositionsManager positionsManagerPlayer;
     [SerializeField] private ShootingPositionsManager positionsManagerAI;
+    [SerializeField] private FireballController playerFireball;
+    [SerializeField] private FireballController aiFireball;
     private bool _hasSetOnce;
 
     private void Awake()
@@ -47,7 +49,8 @@ public sealed class BasicFlowManager : MonoBehaviour
         aiLauncher.ForceStopAndHold();
         playerLauncher?.GetComponent<BallSurfaceResponse>()?.HardResetForNewMatch();
         aiLauncher?.GetComponent<BallSurfaceResponse>()?.HardResetForNewMatch();
-
+        playerFireball?.ResetAll();
+        aiFireball?.ResetAll();
         timer?.StopTimer();
         timer?.SetMatchDuration(120f);
         Time.timeScale = 1f;

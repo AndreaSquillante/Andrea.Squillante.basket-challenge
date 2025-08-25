@@ -9,12 +9,10 @@ public sealed class ScoreManager : MonoBehaviour
 
     private int _score;
 
-    private void Awake()
-    {
-        UpdateUI();
-    }
+    private void Awake() => UpdateUI();
 
-    public void RegisterShot(BasketShotDetector.ShotResult result)
+    // now supports multiplier (default 1 keeps old calls working)
+    public void RegisterShot(BasketShotDetector.ShotResult result, int multiplier = 1)
     {
         int points = 0;
         switch (result)
@@ -24,29 +22,28 @@ public sealed class ScoreManager : MonoBehaviour
             case BasketShotDetector.ShotResult.BackboardBasket: points = 2; break;
             case BasketShotDetector.ShotResult.NoBasket: points = 0; break;
         }
-        _score += points;
+        _score += points * Mathf.Max(1, multiplier);
         UpdateUI();
     }
 
-    // Optional helper to add raw bonus points (for backboard bonus etc.)
-    public System.Action<int> TryAddRaw => AddRaw;
-    private void AddRaw(int pts)
+    // keep old signature
+    public void AddBonusPoints(int pts) => AddBonusPoints(pts, 1);
+
+    // new overload with multiplier
+    public void AddBonusPoints(int pts, int multiplier)
     {
-        _score += Mathf.Max(0, pts);
+        _score += Mathf.Max(0, pts) * Mathf.Max(1, multiplier);
         UpdateUI();
     }
-    public void AddBonusPoints(int pts) { _score += Mathf.Max(0, pts); UpdateUI(); }
+
+    // kept for compatibility with your earlier code
+    public System.Action<int> TryAddRaw => AddRaw;
+    private void AddRaw(int pts) { _score += Mathf.Max(0, pts); UpdateUI(); }
 
     private void UpdateUI()
     {
-        if (scoreText != null)
-            scoreText.text = _score.ToString();
+        if (scoreText) scoreText.text = _score.ToString();
     }
 
-    public void ResetScore()
-    {
-        _score = 0;
-        UpdateUI();
-    }
-
+    public void ResetScore() { _score = 0; UpdateUI(); }
 }
