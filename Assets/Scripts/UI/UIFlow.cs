@@ -51,4 +51,12 @@ public sealed class UIFlow : MonoBehaviour
     public void OnFinishButton() => BasicFlowManager.Instance?.EndGameplayToReward();
     public void OnPlayAgainButton() => BasicFlowManager.Instance?.PlayAgain();
     public void OnBackToMainButton() => BasicFlowManager.Instance?.BackToMain();
+    public void OnQuitButton()
+    {
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        Application.Quit();
+#endif
+    }
 }

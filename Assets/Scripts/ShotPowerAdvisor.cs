@@ -222,7 +222,9 @@ public sealed class ShotPowerAdvisor : MonoBehaviour
         float dY = pc.y - p0.y;
         if (D < 0.05f) return;
 
-        float g = Mathf.Max(0.01f, Physics.gravity.magnitude) * Mathf.Max(0.01f, profile.gravityMultiplier);
+        float g = Mathf.Max(0.01f, Physics.gravity.magnitude)
+        * Mathf.Max(0.01f, profile.gravityMultiplier)
+        * Mathf.Max(0.01f, profile.sceneScale);
         float maxImp = Mathf.Max(0.01f, profile.maxImpulse);
 
         bool TrySpeedFor(float deg, float dist, out float v)

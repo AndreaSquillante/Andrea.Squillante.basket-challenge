@@ -24,12 +24,19 @@ public sealed class BallLauncher : MonoBehaviour
     [SerializeField] private float maxAngleFromUpDeg = 40f;
     [SerializeField] private float cooldown = 0.25f;
     [SerializeField] private bool holdAtOriginOnStart = true;
-
+    [SerializeField, Range(1f, 3f)] private float fallMultiplier = 1.4f; // extra gravity on descent
+    [SerializeField, Range(0f, 2f)] private float apexDeadzoneVy = 0.5f; // no extra near apex
     [Header("Arcade Arc")]
     [SerializeField] private Transform hoopTarget;            // rim center (empty)
     [SerializeField] private bool useArcadeArc = true;        // fixed arc like Basketball Stars
     [SerializeField, Range(20f, 70f)] private float targetLaunchAngleDeg = 48f;
     [SerializeField, Range(0f, 25f)] private float maxYawFromSwipeDeg = 12f;
+    // BallLauncher fields
+    [SerializeField] private bool autoAngleByDistance = true;
+    [SerializeField] private float minAngleDeg = 34f; // far shots
+    [SerializeField] private float maxAngleDeg = 46f; // close shots
+    [SerializeField] private float minDist = 4f;      // meters/units near
+    [SerializeField] private float maxDist = 14f;     // meters/units far
 
     [Header("Perfect Snap")]
     [SerializeField] private bool snapToPerfect = true;
@@ -117,8 +124,17 @@ public sealed class BallLauncher : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (_state == LaunchState.Flying && physicsProfile && physicsProfile.gravityMultiplier > 1.001f)
-            _rb.AddForce(Physics.gravity * (physicsProfile.gravityMultiplier - 1f), ForceMode.Acceleration);
+        if (_state != LaunchState.Flying || physicsProfile == null) return;
+        float effMul = physicsProfile.gravityMultiplier * physicsProfile.sceneScale;
+        Vector3 addAcc = Physics.gravity * Mathf.Max(0f, effMul - 1f);
+
+        float vy = _rb.velocity.y;
+        if (vy < -apexDeadzoneVy)
+        {
+            float extra = Mathf.Max(0f, fallMultiplier - 1f);
+            addAcc += Physics.gravity * extra;
+        }
+        if (addAcc.sqrMagnitude > 0f) _rb.AddForce(addAcc, ForceMode.Acceleration);
     }
 
     private void HandleStart(Vector2 screenPos)
@@ -168,6 +184,7 @@ public sealed class BallLauncher : MonoBehaviour
         // snap-to-perfect (optional)
         if (snapToPerfect && powerAdvisor != null)
         {
+            powerAdvisor.Recompute(); // ensure fresh bands
             var r = powerAdvisor.PerfectRange; // advisor should be recomputed by binders when origin changes
             if (r.valid)
             {
@@ -277,22 +294,26 @@ public sealed class BallLauncher : MonoBehaviour
     {
         Transform origin = shotOrigin ? shotOrigin : transform;
         Vector3 p0 = origin.position;
-
-        Vector3 pc = hoopTarget
-            ? hoopTarget.position
-            : (cam ? cam.transform.position + cam.transform.forward * 10f : p0 + Vector3.forward);
-
+        Vector3 pc = hoopTarget ? hoopTarget.position : (cam ? cam.transform.position + cam.transform.forward * 10f : p0 + Vector3.forward);
         Vector3 toHoopXZ = new Vector3(pc.x, p0.y, pc.z) - p0;
-        Vector3 hDir = toHoopXZ.sqrMagnitude > 1e-6f ? toHoopXZ.normalized : Vector3.forward;
+        float D = toHoopXZ.magnitude;
+        Vector3 hDir = (D > 1e-4f) ? toHoopXZ / D : Vector3.forward;
 
-        float ang = Mathf.Clamp(targetLaunchAngleDeg, 20f, 70f) * Mathf.Deg2Rad;
+        float angDeg = targetLaunchAngleDeg;
+        if (autoAngleByDistance)
+        {
+            float t = Mathf.InverseLerp(minDist, maxDist, D);
+            angDeg = Mathf.Lerp(maxAngleDeg, minAngleDeg, t); // near -> high, far -> low
+        }
+
+        float ang = Mathf.Deg2Rad * Mathf.Clamp(angDeg, 20f, 70f);
         Vector3 dir = (hDir * Mathf.Cos(ang) + Vector3.up * Mathf.Sin(ang)).normalized;
 
         float yaw = Mathf.Clamp(lateral01, -1f, 1f) * maxYawFromSwipeDeg;
         dir = Quaternion.AngleAxis(yaw, Vector3.up) * dir;
-
         return dir;
     }
+
     // Public read-only: can AI shoot now?
     public bool IsReadyForShot => _state == LaunchState.Holding;
 
